@@ -88,17 +88,17 @@ EOF
   sudo chmod +x eigenlayer
   sudo mv eigenlayer /usr/local/bin/eigenlayer
   # 定义文件路径
-  EIGEN_KEY_FIEL="$HOME/.eigenlayer/operator_keys/wallet.ecdsa.key.json"
+  EIGEN_KEY="$HOME/.eigenlayer/operator_keys/wallet.ecdsa.key.json"
   # 检查文件是否存在
-  if [ -f "$EIGEN_KEY_FIEL" ]; then
-    echo "DA 钱包文件 $EIGEN_KEY_FIEL 已存在，跳过"
+  if [ -f "$EIGEN_KEY" ]; then
+    echo "DA 钱包文件 $EIGEN_KEY 已存在，删除文件"
+    rm -f "$EIGEN_KEY"
   else
-    echo "DA 钱包文件 $EIGEN_KEY_FIEL 不存在，执行创建密钥操作"
+    echo "DA 钱包文件 $EIGEN_KEY 不存在，执行创建密钥操作"
     # 执行创建密钥命令
     echo "123" | eigenlayer operator keys create --key-type ecdsa --insecure wallet
   fi
 
-  echo "删除所有旧 tracks 数据"
   sudo rm -rf ~/.tracks
   cd $HOME/tracks
   go mod tidy
@@ -107,7 +107,6 @@ EOF
   read -p "请输入上面显示的 Public Key hex: " dakey
   read -p "请输入节点名: " moniker
 
-  echo "初始化 sequencer"
   # 执行 Go 命令，替换用户输入的值
   go run cmd/main.go init \
     --daRpc "disperser-holesky.eigenda.xyz" \
@@ -119,14 +118,15 @@ EOF
     --stationType "wasm"
 
   # 定义文件路径
-  AIRCHAINS_KEY_FIEL="$HOME/.tracks/junction-accounts/keys/wallet.wallet.json"
+  AIR_KEY="$HOME/.tracks/junction-accounts/keys/wallet.wallet.json"
   # 检查文件是否存在
-  if [ -f "$AIRCHAINS_KEY_FIEL" ]; then
-    echo "AIR 钱包文件 $AIRCHAINS_KEY_FIEL 已存在，跳过"
+  if [ -f "$AIR_KEY" ]; then
+    echo "AIR 钱包文件 $AIR_KEY 已存在，删除文件"
+    rm -f "$AIR_KEY"
   else
-    echo "AIR 钱包文件 $AIRCHAINS_KEY_FIEL 不存在，执行创建密钥操作"
+    echo "AIR 钱包文件 $AIR_KEY 不存在，执行创建密钥操作"
     # 执行创建密钥命令
-    go run cmd/main.go keys junction --accountName wallet --accountPath $AIRCHAINS_KEY_FIEL
+    go run cmd/main.go keys junction --accountName wallet --accountPath $HOME/.tracks/junction-accounts/keys
   fi
 
   echo "初始化 prover"
@@ -138,22 +138,20 @@ EOF
   NODE_ID=$(grep 'node_id =' $CONFIG_PATH | awk -F'"' '{print $2}')
 
   # 从钱包文件中提取 air 开头的钱包地址
-  AIR_ADDRESS=$(jq -r '.address' $AIRCHAINS_KEY_FIEL)
+  AIR_ADDRESS=$(jq -r '.address' $AIR_KEY)
 
   # 获取本机 IP 地址
   LOCAL_IP=$(hostname -I | awk '{print $1}')
 
   # 定义 JSON RPC URL 和其他参数
   JSON_RPC="https://airchains-rpc.kubenode.xyz/"
-  INFO="EVM Track"
+  INFO="WASM Track"
   TRACKS="air_address"
   BOOTSTRAP_NODE="/ip4/$LOCAL_IP/tcp/2300/p2p/$NODE_ID"
 
   echo "请进入 DC 频道 https://discord.com/channels/1116269224449548359/1238910689188511835"
-  echo "发送命令：\$faucet $AIR_ADDRESS"
-  echo "进行领水\n"
-
-  echo "或者进入 https://airchains.faucetme.pro/ 连接 DC 后输入地址领水"
+  echo "发送命令 \$faucet $AIR_ADDRESS 进行领水\n"
+  echo "或者进入 https://airchains.faucetme.pro/ 连接 DC 后输入地址 $AIR_ADDRESS 领水"
 
   # 询问用户是否要继续执行
   read -p "是否已经领水完毕要继续执行？(yes/no): " choice
@@ -180,7 +178,7 @@ EOF
     --accountName wallet \
     --accountPath $HOME/.tracks/junction-accounts/keys \
     --jsonRPC \"$JSON_RPC\" \
-    --info \"WASM Track\" \
+    --info \"$INFO\" \
     --tracks \"$AIR_ADDRESS\" \
     --bootstrapNode \"/ip4/$LOCAL_IP/tcp/2300/p2p/$NODE_ID\""
 

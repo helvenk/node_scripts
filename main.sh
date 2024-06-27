@@ -17,7 +17,7 @@ function main_menu() {
     echo "502. ORE(GPU) -v1 挖矿脚本[已停用]"
     echo "101. Babylon 一键部署"
     echo "-----------------------其他----------------------"
-    echo "0. 退出脚本"
+    echo "0. 退出脚本\n"
     read -p "请输入选项: " OPTION
 
     case $OPTION in
