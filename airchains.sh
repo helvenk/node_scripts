@@ -93,11 +93,8 @@ EOF
   if [ -f "$EIGEN_KEY" ]; then
     echo "DA 钱包文件 $EIGEN_KEY 已存在，删除文件"
     rm -f "$EIGEN_KEY"
-  else
-    echo "DA 钱包文件 $EIGEN_KEY 不存在，执行创建密钥操作"
-    # 执行创建密钥命令
-    echo "123" | eigenlayer operator keys create --key-type ecdsa --insecure wallet
   fi
+  echo "123" | eigenlayer operator keys create --key-type ecdsa --insecure wallet
 
   sudo rm -rf ~/.tracks
   cd $HOME/tracks
@@ -117,20 +114,18 @@ EOF
     --stationAPI "http://127.0.0.1:1317" \
     --stationType "wasm"
 
+  echo "初始化 prover"
+  go run cmd/main.go prover v1WASM
+
   # 定义文件路径
   AIR_KEY="$HOME/.tracks/junction-accounts/keys/wallet.wallet.json"
   # 检查文件是否存在
   if [ -f "$AIR_KEY" ]; then
     echo "AIR 钱包文件 $AIR_KEY 已存在，删除文件"
     rm -f "$AIR_KEY"
-  else
-    echo "AIR 钱包文件 $AIR_KEY 不存在，执行创建密钥操作"
-    # 执行创建密钥命令
-    go run cmd/main.go keys junction --accountName wallet --accountPath $HOME/.tracks/junction-accounts/keys
   fi
-
-  echo "初始化 prover"
-  go run cmd/main.go prover v1WASM
+  # 执行创建密钥命令
+  go run cmd/main.go keys junction --accountName wallet --accountPath $HOME/.tracks/junction-accounts/keys
 
   CONFIG_PATH="$HOME/.tracks/config/sequencer.toml"
 
@@ -150,8 +145,11 @@ EOF
   BOOTSTRAP_NODE="/ip4/$LOCAL_IP/tcp/2300/p2p/$NODE_ID"
 
   echo "请进入 DC 频道 https://discord.com/channels/1116269224449548359/1238910689188511835"
-  echo "发送命令 \$faucet $AIR_ADDRESS 进行领水\n"
-  echo "或者进入 https://airchains.faucetme.pro/ 连接 DC 后输入地址 $AIR_ADDRESS 领水"
+  echo "发送命令 \$faucet $AIR_ADDRESS 进行领水"
+  echo ""
+  echo "或者进入 https://airchains.faucetme.pro/ 连接 DC 后"
+  echo "输入地址 $AIR_ADDRESS 领水"
+  echo ""
 
   # 询问用户是否要继续执行
   read -p "是否已经领水完毕要继续执行？(yes/no): " choice
@@ -212,7 +210,7 @@ EOF
   sudo systemctl enable stationd
   sudo systemctl restart stationd
 
-  echo "创建刷 TX 脚本"
+  echo "创建刷 TX 脚本..."
   cd
   addr=$($HOME/wasm-station/build/wasmstationd keys show node --keyring-backend test -a)
   sudo tee tx.sh >/dev/null <<EOF
@@ -224,6 +222,7 @@ while true; do
 done
 EOF
   screen -dmS tx bash tx.sh
+  echo "请使用 screen -r tx 查看 tx 日志"
 }
 
 function stationd_log() {
@@ -282,7 +281,7 @@ function main_menu() {
     echo "4. 导出所有私钥"
     echo "5. 重启节点"
     echo "6. 回滚 stationd"
-    echo "6. 删除节点"
+    echo "7. 删除节点"
     read -p "请输入选项（1-7）: " OPTION
 
     case $OPTION in
