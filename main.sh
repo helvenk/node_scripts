@@ -22,7 +22,7 @@ function main_menu() {
 
     case $OPTION in
 
-    121) wget -O airchains.sh https://raw.githubusercontent.com/helvenk/node_scripts/master/airchains.sh && chmod +x airchains.sh && ./airchains.sh ;;
+    000) wget -O airchains.sh https://raw.githubusercontent.com/helvenk/node_scripts/master/airchains.sh && chmod +x airchains.sh && ./airchains.sh ;;
 
     0)
       echo "退出脚本。"
