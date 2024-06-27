@@ -163,7 +163,7 @@ EOF
   echo "继续执行脚本..."
 
   # 询问用户是否要继续执行
-  read -p "请输入 RPC 地址？(默认值$JSON_RPC): " rpc_input
+  read -p "请输入 RPC 地址？(直接回车使用默认值 $JSON_RPC): " rpc_input
 
   if [[ "$rpc_input" != "" ]]; then
     JSON_RPC = $rpc_input
@@ -208,7 +208,7 @@ EOF
   echo "启动 station"
   sudo systemctl daemon-reload
   sudo systemctl enable stationd
-  sudo systemctl restart stationd
+  restart_node
 
   echo "创建刷 TX 脚本..."
   cd
@@ -233,12 +233,12 @@ function wasmstationd_log() {
   journalctl -u wasmstationd -f
 }
 
-function private_key() {
-  #evmos私钥#
-  cd $HOME/data/airchains/evm-station/ && /bin/bash ./scripts/local-keys.sh
-  #airchain助记词#
-  cat $HOME/.tracks/junction-accounts/keys/wallet.wallet.json
-
+function wallet_info() {
+  echo ""
+  echo "Airchains"
+  AIR_KEY=$HOME/.tracks/junction-accounts/keys/wallet.wallet.json
+  echo "Mnemonic: $(jq -r '.mnemonic' $AIR_KEY)"
+  echo "Address: $(jq -r '.address' $AIR_KEY)"
 }
 
 function restart_node() {
@@ -257,6 +257,16 @@ function rollback() {
   sudo journalctl -u stationd -f --no-hostname -o cat
 }
 
+function change_rpc() {
+  CONFIG_PATH="$HOME/.tracks/config/sequencer.toml"
+  read -p "输入新的 RPC: " rpc
+  if [[ "$rpc" != "" ]]; then
+    sed -i "s#JunctionRPC = \".*#JunctionRPC = \"$rpc\"#" $CONFIG_PATH
+  fi
+  echo "修改成功，重启节点..."
+  restart_node
+}
+
 function delete_node() {
   sudo systemctl stop wasmstationd.service
   sudo systemctl stop stationd.service
@@ -267,7 +277,6 @@ function delete_node() {
   sudo rm -rf .wasmstationd
   sudo rm -rf .tracks
   sudo journalctl --vacuum-time=1s
-
 }
 
 # 主菜单
@@ -276,22 +285,24 @@ function main_menu() {
     clear
     echo "请选择要执行的操作:"
     echo "1. 安装节点"
-    echo "2. 查看wasmstationd状态"
-    echo "3. 查看stationd状态"
-    echo "4. 导出所有私钥"
+    echo "2. 查看 wasmstationd 状态"
+    echo "3. 查看 stationd 状态"
+    echo "4. 导出钱包信息"
     echo "5. 重启节点"
     echo "6. 回滚 stationd"
-    echo "7. 删除节点"
+    echo "7. 修改 RPC"
+    echo "8. 删除节点"
     read -p "请输入选项（1-7）: " OPTION
 
     case $OPTION in
     1) install_node ;;
     2) wasmstationd_log ;;
     3) stationd_log ;;
-    4) private_key ;;
+    4) wallet_info ;;
     5) restart_node ;;
     6) rollback ;;
-    7) delete_node ;;
+    7) change_rpc ;;
+    8) delete_node ;;
     *) echo "无效选项。" ;;
     esac
     echo "按任意键返回主菜单..."
