@@ -246,6 +246,34 @@ function restart_node() {
   sudo systemctl restart stationd.service
 }
 
+function query_reward() {
+  AIR_KEY=$HOME/.tracks/junction-accounts/keys/wallet.wallet.json
+  addr=$(jq -r '.address' $AIR_KEY)
+  output=$(curl -s 'https://points.airchains.io/api/rewards-table' \
+    -H 'accept: */*' \
+    -H 'accept-language: zh,zh-CN;q=0.9,en;q=0.8' \
+    -H 'content-type: application/json' \
+    -H 'origin: https://points.airchains.io' \
+    -H 'priority: u=1, i' \
+    -H 'referer: https://points.airchains.io/' \
+    -H 'sec-ch-ua: "Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"' \
+    -H 'sec-ch-ua-mobile: ?0' \
+    -H 'sec-ch-ua-platform: "Windows"' \
+    -H 'sec-fetch-dest: empty' \
+    -H 'sec-fetch-mode: cors' \
+    -H 'sec-fetch-site: same-origin' \
+    -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36' \
+    --data-raw "{\"address\":\"$addr\"}")
+
+  echo -e "\nadress: $addr"
+  id=$(echo "$output" | jq -r '.data.stations[0].station_id')
+  pod=$(echo "$output" | jq -r '.data.stations[0].latest_pod')
+  points=$(echo "$output" | jq -r '.data.stations[0].points')
+  echo "station_id: $id"
+  echo "latest_pod: $pod"
+  echo "points: $points"
+}
+
 function rollback() {
   sudo systemctl stop stationd
   cd ~/tracks
@@ -287,22 +315,24 @@ function main_menu() {
     echo "1. 安装节点"
     echo "2. 查看 wasmstationd 状态"
     echo "3. 查看 stationd 状态"
-    echo "4. 导出钱包信息"
-    echo "5. 重启节点"
-    echo "6. 回滚 stationd"
-    echo "7. 修改 RPC"
-    echo "8. 删除节点"
-    read -p "请输入选项（1-7）: " OPTION
+    echo "4. 查看积分"
+    echo "5. 导出钱包信息"
+    echo "6. 重启节点"
+    echo "7. 回滚 stationd"
+    echo "8. 修改 RPC"
+    echo "9. 删除节点"
+    read -p "请输入选项（1-9）: " OPTION
 
     case $OPTION in
     1) install_node ;;
     2) wasmstationd_log ;;
     3) stationd_log ;;
-    4) wallet_info ;;
-    5) restart_node ;;
-    6) rollback ;;
-    7) change_rpc ;;
-    8) delete_node ;;
+    4) query_reward ;;
+    5) wallet_info ;;
+    6) restart_node ;;
+    7) rollback ;;
+    8) change_rpc ;;
+    9) delete_node ;;
     *) echo "无效选项。" ;;
     esac
     echo "按任意键返回主菜单..."
