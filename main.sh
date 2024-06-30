@@ -1,6 +1,13 @@
 #!/bin/bash
 
-# 主菜单
+function run_command() {
+  wget -O "${1}" https://raw.githubusercontent.com/helvenk/node_scripts/master/"${1}" && chmod +x "${1}" && ./"${1}"
+}
+
+function run_command_daduge() {
+  wget -O "${1}" https://raw.githubusercontent.com/a3165458/"${1}"/master/"${1}" && chmod +x "${1}" && ./"${1}"
+}
+
 function main_menu() {
   while true; do
     clear
@@ -9,6 +16,7 @@ function main_menu() {
     echo "--------------------节点类--------------------"
     echo "000. Airchains"
     echo "001. Nubit"
+    echo "002. Aleo"
     echo "--------------------挖矿类--------------------"
     echo "--------------------已停用---------------------"
     echo "---------------------其他----------------------"
@@ -17,8 +25,9 @@ function main_menu() {
 
     case $OPTION in
 
-    000) wget -O airchains.sh https://raw.githubusercontent.com/helvenk/node_scripts/master/airchains.sh && chmod +x airchains.sh && ./airchains.sh ;;
-    001) wget -O nubit.sh https://raw.githubusercontent.com/a3165458/nubit.sh/main/nubit.sh && chmod +x nubit.sh && ./nubit.sh ;;
+    000) run_command airchains.sh ;;
+    001) run_command_daduge nubit.sh ;;
+    002) run_command aleo.sh ;;
 
     0)
       echo "退出脚本。"
@@ -34,5 +43,4 @@ function main_menu() {
   done
 }
 
-# 显示主菜单
 main_menu
