@@ -46,6 +46,15 @@ else
   source ~/.bash_profile
 fi
 
+if command -v junctiond >/dev/null 2>&1; then
+  echo "junctiond 已安装，跳过安装步骤。"
+else
+  echo "安装 junctiond..."
+  wget https://github.com/airchains-network/junction/releases/download/v0.1.0/junctiond
+  chmod +x junctiond
+  sudo mv junctiond /usr/local/bin
+fi
+
 # 验证安装后的 Go 版本
 echo "当前 Go 版本："
 go version
@@ -212,8 +221,19 @@ EOF
 
   echo "创建刷 TX 脚本..."
   cd
+  create_tx_script
+
+  echo "创建 station 监控脚本..."
+  cd
+  create_station_script
+}
+
+function create_tx_script() {
+  NAME="airchains_tx"
+  screen -X -S $NAME quit
+
   addr=$($HOME/wasm-station/build/wasmstationd keys show node --keyring-backend test -a)
-  sudo tee tx.sh >/dev/null <<EOF
+  sudo tee "$NAME.sh" >/dev/null <<EOF
 #!/bin/bash
 
 while true; do
@@ -221,8 +241,8 @@ while true; do
   sleep 6  # Add a sleep to avoid overwhelming the system or network
 done
 EOF
-  screen -dmS tx bash tx.sh
-  echo "请使用 screen -r tx 查看 tx 日志"
+  screen -dmS "$NAME" bash "./$NAME.sh"
+  echo "请使用 screen -r $NAME 查看日志"
 }
 
 function stationd_log() {
@@ -295,6 +315,42 @@ function change_rpc() {
   restart_node
 }
 
+function create_station_script() {
+  NAME="airchains_station"
+  screen -X -S $NAME quit
+
+  echo '#!/bin/bash
+
+while true; do
+    echo "[$(date)] 检查 station 状态..."
+
+    # 获取最近100行日志
+    log_check=$(sudo journalctl -u stationd -n 100)
+
+    # 检查日志是否每一行都不包含 "module=junction txHash=" 并且每一行都包含 "INF New Block Found module=blocksync"
+    if ! echo "$log_check" | grep -q "module=junction txHash=" && echo "$log_check" | grep -q "INF New Block Found module=blocksync"; then
+      # 如果满足条件，则输出消息和时间戳
+      echo "[$(date)] No txHash found and all lines contain INF New Block Found, restarting stationd service..."
+      # 重启服务
+      sudo systemctl restart wasmstationd.service
+      sudo systemctl restart stationd.service
+      # 输出重启服务的时间戳
+      echo "[$(date)] stationd service restarted."
+    fi
+
+    # 等待3分钟后再次执行
+    sleep 180
+done' | sudo tee "$NAME.sh"
+  screen -dmS "$NAME" bash "./$NAME.sh"
+  echo "请使用 screen -r $NAME 查看日志"
+}
+
+function query_balance() {
+  RPC=$(grep -oP 'JunctionRPC = "\K[^"]*' $HOME/.tracks/config/sequencer.toml)
+  ADDRESS=$(jq -r '.address' $HOME/.tracks/junction-accounts/keys/wallet.wallet.json)
+  junctiond query bank balances $ADDRESS --node $RPC
+}
+
 function delete_node() {
   sudo systemctl stop wasmstationd.service
   sudo systemctl stop stationd.service
@@ -317,11 +373,14 @@ function main_menu() {
     echo "3. 查看 stationd 状态"
     echo "4. 查看积分"
     echo "5. 导出钱包信息"
-    echo "6. 重启节点"
-    echo "7. 回滚 stationd"
-    echo "8. 修改 RPC"
-    echo "9. 删除节点"
-    read -p "请输入选项（1-9）: " OPTION
+    echo "6. 查看余额"
+    echo "7. 重启节点"
+    echo "8. 回滚 stationd"
+    echo "9. 修改 RPC"
+    echo "10. 创建刷 tx 脚本"
+    echo "11. 创建 stationd 监听脚本"
+    echo "12. 删除节点"
+    read -p "请输入选项: " OPTION
 
     case $OPTION in
     1) install_node ;;
@@ -329,10 +388,13 @@ function main_menu() {
     3) stationd_log ;;
     4) query_reward ;;
     5) wallet_info ;;
-    6) restart_node ;;
-    7) rollback ;;
-    8) change_rpc ;;
-    9) delete_node ;;
+    6) query_balance ;;
+    7) restart_node ;;
+    8) rollback ;;
+    9) change_rpc ;;
+    10) create_tx_script ;;
+    11) create_station_script ;;
+    12) delete_node ;;
     *) echo "无效选项。" ;;
     esac
     echo "按任意键返回主菜单..."

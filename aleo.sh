@@ -37,7 +37,12 @@ function view_logs() {
 
 function uninstall_node() {
   pm2 stop aleo-pool-prover
+  pm2 delete aleo-pool-prover
   rm -r aleo-pool-prover
+}
+
+function restart_node() {
+  pm2 restart aleo-pool-prover
 }
 
 function install_node() {
@@ -72,14 +77,16 @@ function main_menu() {
     echo "1. 安装节点"
     echo "2. 查看教程"
     echo "3. 查看日志"
-    echo "4. 卸载节点 "
+    echo "4. 重启节点"
+    echo "5. 卸载节点 "
     read -p "请输入选项: " OPTION
 
     case $OPTION in
     1) install_node ;;
     2) view_doc ;;
     3) view_logs ;;
-    4) uninstall_node ;;
+    4) restart_node ;;
+    5) uninstall_node ;;
     *) echo "无效选项。" ;;
     esac
     echo "按任意键返回主菜单..."

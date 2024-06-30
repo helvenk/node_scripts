@@ -71,6 +71,22 @@ function view_doc() {
 }
 ################## 查看教程 ########################
 
+################## 创建后台定时脚本 #################
+function create_screen_script() {
+  NAME="xxx"
+  screen -X -S $NAME quit
+
+  echo '#!/bin/bash
+
+while true; do
+  echo "running"
+  sleep 6
+done' | sudo tee "$NAME.sh"
+  screen -dmS "$NAME" bash "./$NAME.sh"
+  echo "请使用 screen -r $NAME 查看日志"
+}
+################## 创建后台定时脚本 #################
+
 #################### 主菜单 ######################
 function main_menu() {
   while true; do
