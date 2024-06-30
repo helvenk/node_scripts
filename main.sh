@@ -29,8 +29,8 @@ function main_menu() {
     000) run_command airchains.sh ;;
     001) run_command_daduge nubit.sh ;;
     002) run_command aleo.sh ;;
-
-    999) wget -O node_scripts.sh https://bit.ly/4eULdS7 && chmod +x node_scripts.sh && ./node_scripts.sh ;;
+    
+    999) run_command node_scripts.sh ;;
 
     0)
       echo "退出脚本。"
