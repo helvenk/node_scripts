@@ -348,7 +348,12 @@ done' | sudo tee "$NAME.sh"
 function query_balance() {
   RPC=$(grep -oP 'JunctionRPC = "\K[^"]*' $HOME/.tracks/config/sequencer.toml)
   ADDRESS=$(jq -r '.address' $HOME/.tracks/junction-accounts/keys/wallet.wallet.json)
-  junctiond query bank balances $ADDRESS --node $RPC
+
+  output=$(junctiond query bank balances $ADDRESS --node $RPC)
+  amount=$(echo $output | grep -oP '(?<=amount: ")[0-9]+')
+  amount=$(awk "BEGIN {printf \"%.6f\", $((amount)) / 1000000}")
+  echo "$amount" "AMF"
+
 }
 
 function delete_node() {
