@@ -52,15 +52,19 @@ function install_node() {
   wget -O aleo-pool-prover https://github.com/zkrush/aleo-pool-client/releases/download/v1.5-testnet-beta/aleo-pool-prover
   chmod +x aleo-pool-prover
 
-  read -p "是否已在 zkrush 添加挖矿账户？(y/N): " choice
+  read -p "是否已在 zkrush 注册并添加挖矿账户？(y/N): " choice
   if [[ "$choice" != "y" ]]; then
     echo "请添加挖矿账户后再重新运行命令：https://pool.zkrush.com/zh-hant/personal/miner"
     exit 0
   fi
 
   pool="wss://aleo.zkrush.com:3333"
-  read -p "输入 zkrush 账户名称：" account
-  read -p "输入 worker 名称(随便取一个，名字不要太短)：" worker
+  read -p "输入 zkrush 挖矿账户名称（在账户设置里面添加）：" account
+  read -p "输入节点名称(按回车直接使用主机名)：" worker
+
+  if [[ "$worker" == "" ]]; then
+    worker=$(hostname)
+  fi
 
   pm2 start ./aleo-pool-prover --name "aleo-pool-prover" -- --pool $pool --account $account --worker-name $worker
 }
