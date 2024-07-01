@@ -153,7 +153,7 @@ EOF
   TRACKS="air_address"
   BOOTSTRAP_NODE="/ip4/$LOCAL_IP/tcp/2300/p2p/$NODE_ID"
 
-  echo "请进入 DC 频道 https://discord.com/channels/1116269224449548359/1238910689188511835"
+  echo "请进入 DC 频道 https://discord.gg/airchains"
   echo "发送命令 \$faucet $AIR_ADDRESS 进行领水"
   echo ""
   echo "或者进入 https://airchains.faucetme.pro/ 连接 DC 后"
@@ -257,8 +257,8 @@ function wallet_info() {
   echo ""
   echo "Airchains"
   AIR_KEY=$HOME/.tracks/junction-accounts/keys/wallet.wallet.json
-  echo "Mnemonic: $(jq -r '.mnemonic' $AIR_KEY)"
-  echo "Address: $(jq -r '.address' $AIR_KEY)"
+  echo "助记词: $(jq -r '.mnemonic' $AIR_KEY)"
+  echo "地址: $(jq -r '.address' $AIR_KEY)"
 }
 
 function restart_node() {
@@ -285,7 +285,7 @@ function query_reward() {
     -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36' \
     --data-raw "{\"address\":\"$addr\"}")
 
-  echo -e "\nadress: $addr"
+  echo -e "\naddress: $addr"
   id=$(echo "$output" | jq -r '.data.stations[0].station_id')
   pod=$(echo "$output" | jq -r '.data.stations[0].latest_pod')
   points=$(echo "$output" | jq -r '.data.stations[0].points')
@@ -352,8 +352,8 @@ function query_balance() {
   output=$(junctiond query bank balances $ADDRESS --node $RPC)
   amount=$(echo $output | grep -oP '(?<=amount: ")[0-9]+')
   amount=$(awk "BEGIN {printf \"%.6f\", $((amount)) / 1000000}")
-  echo "$amount" "AMF"
-
+  echo "地址：$ADDRESS"
+  echo "余额：$amount AMF"
 }
 
 function delete_node() {
