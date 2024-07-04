@@ -238,7 +238,7 @@ function create_tx_script() {
 
 while true; do
   $HOME/wasm-station/build/wasmstationd tx bank send node ${addr} 1stake --from node --chain-id station-1 --keyring-backend test -y 
-  sleep $((RANDOM % 3 + 2))  # Add a sleep to avoid overwhelming the system or network
+  sleep \$((RANDOM % 3 + 2))  # Add a sleep to avoid overwhelming the system or network
 done
 EOF
   screen -dmS "$NAME" bash "./$NAME.sh"
