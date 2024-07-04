@@ -190,9 +190,9 @@ EOF
     --bootstrapNode \"/ip4/$LOCAL_IP/tcp/2300/p2p/$NODE_ID\""
 
   echo "修改默认的 gas price"
-  sed -i 's/gasFees := fmt.Sprintf("%damf", gas)/gasFees := fmt.Sprintf("%damf", 2*gas)/' "$HOME/tracks/junction/verifyPod.go"
-  sed -i 's/gasFees := fmt.Sprintf("%damf", gas)/gasFees := fmt.Sprintf("%damf", 2*gas)/' "$HOME/tracks/junction/validateVRF.go"
-  sed -i 's/gasFees := fmt.Sprintf("%damf", gas)/gasFees := fmt.Sprintf("%damf", 3*gas)/' "$HOME/tracks/junction/submitPod.go"
+  sed -i 's/gasFees := fmt.Sprintf("%damf", gas)/gasFees := fmt.Sprintf("%damf", 3*gas)/' "$HOME/tracks/junction/verifyPod.go"
+  sed -i 's/gasFees := fmt.Sprintf("%damf", gas)/gasFees := fmt.Sprintf("%damf", 3*gas)/' "$HOME/tracks/junction/validateVRF.go"
+  sed -i 's/gasFees := fmt.Sprintf("%damf", gas)/gasFees := fmt.Sprintf("%damf", 4*gas)/' "$HOME/tracks/junction/submitPod.go"
 
   echo "创建 station"
   echo "$create_station_cmd"
@@ -238,7 +238,7 @@ function create_tx_script() {
 
 while true; do
   $HOME/wasm-station/build/wasmstationd tx bank send node ${addr} 1stake --from node --chain-id station-1 --keyring-backend test -y 
-  sleep 6  # Add a sleep to avoid overwhelming the system or network
+  sleep $((RANDOM % 3 + 2))  # Add a sleep to avoid overwhelming the system or network
 done
 EOF
   screen -dmS "$NAME" bash "./$NAME.sh"
