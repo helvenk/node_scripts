@@ -17,6 +17,7 @@ function main_menu() {
     echo "000. Airchains"
     echo "001. Nubit"
     echo "002. Aleo"
+    echo "003. Titan"
     echo "--------------------挖矿类--------------------"
     echo "--------------------已停用--------------------"
     echo "---------------------其他---------------------"
@@ -29,6 +30,7 @@ function main_menu() {
     000) run_command airchains.sh ;;
     001) run_command_daduge nubit.sh ;;
     002) run_command aleo.sh ;;
+    003) run_command titan.sh ;;
 
     999) run_command main.sh ;;
 
