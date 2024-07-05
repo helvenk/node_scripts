@@ -31,7 +31,7 @@ function install_node() {
   fi
 
   if [ -z "$start_rpc_port" ]; then
-    start_rpc_port=3000
+    start_rpc_port=30000
   fi
 
   if [ -z "$storage_gb" ]; then
