@@ -100,13 +100,13 @@ function install_node() {
 function view_info() {
   container_id=$(docker ps -a -q --filter ancestor=$IMAGE)
   docker exec $container_id bash -c "\
-  echo '设备ID:'\
-  titan-edge info\
-  echo '配置信息:'\
-  titan-edge config show\
-  echo '绑定信息:'\
-  titan-edge show binding-info https://api-test1.container1.titannet.io/api/v2/device\
-  echo '下载任务:'\
+  echo '设备ID:' && \
+  titan-edge info && \
+  echo '配置信息:' && \
+  titan-edge config show && \
+  echo '绑定信息:' && \
+  titan-edge show binding-info https://api-test1.container1.titannet.io/api/v2/device && \
+  echo '下载任务:' && \
   titan-edge cache"
 }
 
