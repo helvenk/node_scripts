@@ -76,13 +76,9 @@ function create_screen_script() {
   NAME="xxx"
   screen -X -S $NAME quit
 
-  echo '#!/bin/bash
+  command=''
 
-while true; do
-  echo "running"
-  sleep 6
-done' | sudo tee "$NAME.sh"
-  screen -dmS "$NAME" bash "./$NAME.sh"
+  screen -dmS "$NAME" bash -c "$command"
   echo "请使用 screen -r $NAME 查看日志"
 }
 ################## 创建后台定时脚本 #################

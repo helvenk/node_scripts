@@ -233,24 +233,58 @@ function create_tx_script() {
   screen -X -S $NAME quit
 
   addr=$($HOME/wasm-station/build/wasmstationd keys show node --keyring-backend test -a)
-  sudo tee "$NAME.sh" >/dev/null <<EOF
-#!/bin/bash
+  command="while true; do \
+  $HOME/wasm-station/build/wasmstationd tx bank send node ${addr} 1stake --from node --chain-id station-1 --keyring-backend test -y; \
+  sleep \$((RANDOM % 3 + 2)); \
+  done"
 
+  screen -dmS "$NAME" bash -c "$command"
+  echo "请使用 screen -r $NAME 查看日志"
+}
+
+function create_station_script() {
+  NAME="airchains_station"
+  screen -X -S $NAME quit
+
+  command='
+service_name="stationd"
+gas_string="with gas used"
+restart_delay=180  # Restart delay in seconds (3 minutes)
+
+echo "Script started and it will rollback $service_name if needed..."
 while true; do
-  $HOME/wasm-station/build/wasmstationd tx bank send node ${addr} 1stake --from node --chain-id station-1 --keyring-backend test -y 
-  sleep \$((RANDOM % 3 + 2))  # Add a sleep to avoid overwhelming the system or network
-done
-EOF
-  screen -dmS "$NAME" bash "./$NAME.sh"
+  # Get the last 10 lines of service logs
+  logs=$(systemctl status "$service_name" --no-pager | tail -n 10)
+
+  # Check for both error and gas used strings
+  if [[ "$logs" =~ $gas_string ]]; then
+    echo "Found error and gas used in logs, stopping $service_name..."
+    systemctl stop "$service_name"
+    cd ~/tracks
+   
+    echo "Service $service_name stopped, starting rollback..."
+    go run cmd/main.go rollback
+    go run cmd/main.go rollback
+    go run cmd/main.go rollback
+    echo "Rollback completed, starting $service_name..."
+    systemctl start "$service_name"
+    echo "Service $service_name started"
+  fi
+
+  # Sleep for the restart delay
+  sleep "$restart_delay"
+done'
+
+  screen -dmS "$NAME" bash -c "$command"
   echo "请使用 screen -r $NAME 查看日志"
 }
 
 function stationd_log() {
-  journalctl -u stationd -f
+  journalctl -u stationd -f --no-hostname -o cat
 }
 
 function wasmstationd_log() {
-  journalctl -u wasmstationd -f
+  journalctl -u wasmstationd -f --no-hostname -o cat
 }
 
 function wallet_info() {
@@ -313,36 +347,6 @@ function change_rpc() {
   fi
   echo "修改成功，重启节点..."
   restart_node
-}
-
-function create_station_script() {
-  NAME="airchains_station"
-  screen -X -S $NAME quit
-
-  echo '#!/bin/bash
-
-while true; do
-    echo "[$(date)] 检查 station 状态..."
-
-    # 获取最近100行日志
-    log_check=$(sudo journalctl -u stationd -n 100)
-
-    # 检查日志是否每一行都不包含 "module=junction txHash=" 并且每一行都包含 "INF New Block Found module=blocksync"
-    if ! echo "$log_check" | grep -q "module=junction txHash=" && echo "$log_check" | grep -q "INF New Block Found module=blocksync"; then
-      # 如果满足条件，则输出消息和时间戳
-      echo "[$(date)] No txHash found and all lines contain INF New Block Found, restarting stationd service..."
-      # 重启服务
-      sudo systemctl restart wasmstationd.service
-      sudo systemctl restart stationd.service
-      # 输出重启服务的时间戳
-      echo "[$(date)] stationd service restarted."
-    fi
-
-    # 等待3分钟后再次执行
-    sleep 180
-done' | sudo tee "$NAME.sh"
-  screen -dmS "$NAME" bash "./$NAME.sh"
-  echo "请使用 screen -r $NAME 查看日志"
 }
 
 function query_balance() {
