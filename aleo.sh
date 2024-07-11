@@ -69,6 +69,10 @@ function install_node() {
   pm2 start ./aleo-pool-prover --name "aleo-pool-prover" -- --pool $pool --account $account --worker-name $worker
 }
 
+function stop_node() {
+  pm2 stop aleo-pool-prover
+}
+
 function main_menu() {
   while true; do
     clear
@@ -82,7 +86,8 @@ function main_menu() {
     echo "2. 查看教程"
     echo "3. 查看日志"
     echo "4. 重启节点"
-    echo "5. 卸载节点 "
+    echo "5. 停止节点"
+    echo "6. 卸载节点 "
     read -p "请输入选项: " OPTION
 
     case $OPTION in
@@ -90,7 +95,8 @@ function main_menu() {
     2) view_doc ;;
     3) view_logs ;;
     4) restart_node ;;
-    5) uninstall_node ;;
+    5) stop_node ;;
+    6) uninstall_node ;;
     *) echo "无效选项。" ;;
     esac
     echo "按任意键返回主菜单..."

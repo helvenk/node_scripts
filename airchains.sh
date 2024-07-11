@@ -254,7 +254,18 @@ restart_delay=180  # Restart delay in seconds (3 minutes)
 echo "Script started and it will rollback $service_name if needed..."
 while true; do
   # Get the last 10 lines of service logs
-  logs=$(systemctl status "$service_name" --no-pager | tail -n 10)
+  logs=$(systemctl status "$service_name" --no-pager | tail -n 20)
+
+  # 检查日志是否每一行都不包含 "module=junction txHash=" 并且每一行都包含 "INF New Block Found module=blocksync"
+  if ! echo "$logs" | grep -q "module=junction txHash=" && echo "$logs" | grep -q "INF New Block Found module=blocksync"; then
+    # 如果满足条件，则输出消息和时间戳
+    echo "[$(date)] No txHash found and all lines contain INF New Block Found, restarting stationd service..."
+    # 重启服务
+    sudo systemctl restart wasmstationd.service
+    sudo systemctl restart stationd.service
+    # 输出重启服务的时间戳
+    echo "[$(date)] stationd service restarted."
+  fi
 
   # Check for both error and gas used strings
   if [[ "$logs" =~ $gas_string ]]; then
