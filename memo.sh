@@ -83,6 +83,15 @@ function create_screen_script() {
 }
 ################## 创建后台定时脚本 #################
 
+################## bark 发送通知 #################
+function bark_send_notify() {
+  read -p "输入你的 bark key: " key
+
+  curl -X POST https://api.day.app/$key \
+    -d'title=Airchains&body=包租婆没水啦&group=分组&copy='
+}
+################## bark 发送通知  #################
+
 #################### 主菜单 ######################
 function main_menu() {
   while true; do

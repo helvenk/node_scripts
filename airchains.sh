@@ -290,6 +290,29 @@ done'
   echo "请使用 screen -r $NAME 查看日志"
 }
 
+function create_balance_script() {
+  NAME="airchains_notify"
+  screen -X -S $NAME quit
+
+  RPC=$(grep -oP 'JunctionRPC = "\K[^"]*' $HOME/.tracks/config/sequencer.toml)
+  ADDR=$(jq -r '.address' $HOME/.tracks/junction-accounts/keys/wallet.wallet.json)
+
+  read -p "输入你的 bark key: " key
+
+  command='while true; do 
+  output=$(junctiond query bank balances '"$ADDR"' --node '"$RPC"') 
+  amount=$(echo $output | grep -oP "(?<=amount: \")[0-9]+")
+  amount=$(awk "BEGIN {printf \"%.6f\", $((amount)) / 1000000}")
+  if [ "$amount" -lt 0.1 ]; then 
+    curl -X POST https://api.day.app/'"$key"' -d"title=Airchains&body=包租婆没水啦 '"$ADDR"'&copy='"$ADDR"'"; 
+  fi 
+  sleep 300; 
+done'
+
+  screen -dmS "$NAME" bash -c "$command"
+  echo "请使用 screen -r $NAME 查看日志"
+}
+
 function stationd_log() {
   journalctl -u stationd -f --no-hostname -o cat
 }
@@ -399,7 +422,8 @@ function main_menu() {
     echo "9. 修改 RPC"
     echo "10. 创建刷 tx 脚本"
     echo "11. 创建 stationd 监听脚本"
-    echo "12. 删除节点"
+    echo "12. 创建余额通知脚本"
+    echo "13. 删除节点"
     read -p "请输入选项: " OPTION
 
     case $OPTION in
@@ -414,7 +438,8 @@ function main_menu() {
     9) change_rpc ;;
     10) create_tx_script ;;
     11) create_station_script ;;
-    12) delete_node ;;
+    12) create_balance_script ;;
+    13) delete_node ;;
     *) echo "无效选项。" ;;
     esac
     echo "按任意键返回主菜单..."
