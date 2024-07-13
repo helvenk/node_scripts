@@ -5,7 +5,10 @@ function run_command() {
 }
 
 function run_command_daduge() {
-  wget -O "${1}" https://raw.githubusercontent.com/a3165458/"${1}"/master/"${1}" && chmod +x "${1}" && ./"${1}"
+  project=$1
+  script=${2:-$project.sh}
+  file=${3:-$script}
+  wget -O $file https://raw.githubusercontent.com/a3165458/"$project"/master/"$script" && chmod +x "$file" && ./"$file"
 }
 
 function main_menu() {
@@ -18,6 +21,8 @@ function main_menu() {
     echo "001. Nubit"
     echo "002. Aleo"
     echo "003. Titan"
+    echo "004. Artela"
+    echo "005. Farcast"
     echo "--------------------挖矿类--------------------"
     echo "--------------------已停用--------------------"
     echo "---------------------其他---------------------"
@@ -28,9 +33,11 @@ function main_menu() {
     case $OPTION in
 
     000) run_command airchains.sh ;;
-    001) run_command_daduge nubit.sh ;;
+    001) run_command_daduge nubit.sh nubit.sh ;;
     002) run_command aleo.sh ;;
     003) run_command titan.sh ;;
+    004) run_command artela.sh ;;
+    005) run_command_daduge Farcaster ;;
 
     999) run_command main.sh ;;
 
