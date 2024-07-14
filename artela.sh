@@ -186,7 +186,10 @@ function import_wallet() {
 function view_wallet() {
     output=$(echo "$WALLET_PASS" | artelad keys show wallet)
     addr=$(echo $output | awk '/address/ {print $3}')
-    echo "钱包地址：$addr"
+    evm=$(artelad debug addr $addr | awk '/Address \(hex\)/ {print $3}')
+    echo "地址：$addr"
+    echo "evm地址：$evm"
+    echo "余额："
     artelad query bank balances $addr
 }
 
