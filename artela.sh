@@ -1,5 +1,7 @@
 #!/bin/bash
 
+WALLET_PASS=12345678
+
 # 检查是否以root用户运行脚本
 if [ "$(id -u)" != "0" ]; then
     echo "此脚本需要以root用户权限运行。"
@@ -9,7 +11,7 @@ fi
 
 # 检查并安装 Node.js 和 npm
 function install_nodejs_and_npm() {
-    if command -v node > /dev/null 2>&1; then
+    if command -v node >/dev/null 2>&1; then
         echo "Node.js 已安装"
     else
         echo "Node.js 未安装，正在安装..."
@@ -17,7 +19,7 @@ function install_nodejs_and_npm() {
         sudo apt-get install -y nodejs
     fi
 
-    if command -v npm > /dev/null 2>&1; then
+    if command -v npm >/dev/null 2>&1; then
         echo "npm 已安装"
     else
         echo "npm 未安装，正在安装..."
@@ -27,7 +29,7 @@ function install_nodejs_and_npm() {
 
 # 检查并安装 PM2
 function install_pm2() {
-    if command -v pm2 > /dev/null 2>&1; then
+    if command -v pm2 >/dev/null 2>&1; then
         echo "PM2 已安装"
     else
         echo "PM2 未安装，正在安装..."
@@ -50,7 +52,7 @@ function check_and_set_alias() {
     # 检查快捷键是否已经设置
     if ! grep -q "$alias_name" "$shell_rc"; then
         echo "设置快捷键 '$alias_name' 到 $shell_rc"
-        echo "alias $alias_name='bash $SCRIPT_PATH'" >> "$shell_rc"
+        echo "alias $alias_name='bash $SCRIPT_PATH'" >>"$shell_rc"
         # 添加提醒用户激活快捷键的信息
         echo "快捷键 '$alias_name' 已设置。请运行 'source $shell_rc' 来激活快捷键，或重新打开终端。"
     else
@@ -74,39 +76,41 @@ function install_node() {
     sudo apt install -y curl iptables build-essential git wget jq make gcc nano tmux htop nvme-cli pkg-config libssl-dev libleveldb-dev tar clang bsdmainutils ncdu unzip libleveldb-dev lz4 snapd
 
     # 安装 Go
+    if command -v go >/dev/null 2>&1; then
+        echo "Go 环境已安装"
+    else
+        echo "Go 环境未安装，正在安装..."
         sudo rm -rf /usr/local/go
         curl -L https://go.dev/dl/go1.22.0.linux-amd64.tar.gz | sudo tar -xzf - -C /usr/local
-        echo 'export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin' >> $HOME/.bash_profile
+        echo 'export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin' >>$HOME/.bash_profile
         source $HOME/.bash_profile
         go version
+    fi
 
     # 安装所有二进制文件
     cd $HOME
     git clone https://github.com/artela-network/artela
     cd artela
-    git checkout v0.4.7-rc7-fix-execution 
+    git checkout v0.4.7-rc7-fix-execution
     make install
-    
+
     cd $HOME
     wget https://github.com/artela-network/artela/releases/download/v0.4.7-rc7-fix-execution/artelad_0.4.7_rc7_fix_execution_Linux_amd64.tar.gz
     tar -xvf artelad_0.4.7_rc7_fix_execution_Linux_amd64.tar.gz
     mkdir libs
     mv $HOME/libaspect_wasm_instrument.so $HOME/libs/
     mv $HOME/artelad /usr/local/bin/
-    echo 'export LD_LIBRARY_PATH=$HOME/libs:$LD_LIBRARY_PATH' >> ~/.bash_profile
+    echo 'export LD_LIBRARY_PATH=$HOME/libs:$LD_LIBRARY_PATH' >>~/.bash_profile
     source ~/.bash_profile
-    
 
     # 配置artelad
     artelad config chain-id artela_11822-1
     artelad init "$NODE_MONIKER" --chain-id artela_11822-1
     artelad config node tcp://localhost:3457
 
-
-
     # 获取初始文件和地址簿
-    curl -L https://snapshots.dadunode.com/artela/genesis.json > $HOME/.artelad/config/genesis.json
-    curl -L https://snapshots.dadunode.com/artela/addrbook.json > $HOME/.artelad/config/addrbook.json
+    curl -L https://snapshots.dadunode.com/artela/genesis.json >$HOME/.artelad/config/genesis.json
+    curl -L https://snapshots.dadunode.com/artela/addrbook.json >$HOME/.artelad/config/addrbook.json
 
     # 配置节点
     SEEDS=""
@@ -124,11 +128,11 @@ function install_node() {
     node_address="tcp://localhost:3457"
     sed -i -e "s%^proxy_app = \"tcp://127.0.0.1:26658\"%proxy_app = \"tcp://127.0.0.1:3458\"%; s%^laddr = \"tcp://127.0.0.1:26657\"%laddr = \"tcp://127.0.0.1:3457\"%; s%^pprof_laddr = \"localhost:6060\"%pprof_laddr = \"localhost:3460\"%; s%^laddr = \"tcp://0.0.0.0:26656\"%laddr = \"tcp://0.0.0.0:3456\"%; s%^prometheus_listen_addr = \":26660\"%prometheus_listen_addr = \":3466\"%" $HOME/.artelad/config/config.toml
     sed -i -e "s%^address = \"tcp://localhost:1317\"%address = \"tcp://0.0.0.0:3417\"%; s%^address = \":8080\"%address = \":3480\"%; s%^address = \"localhost:9090\"%address = \"0.0.0.0:3490\"%; s%^address = \"localhost:9091\"%address = \"0.0.0.0:3491\"%; s%:8545%:3445%; s%:8546%:3446%; s%:6065%:3465%" $HOME/.artelad/config/app.toml
-    echo "export Artela_RPC_PORT=$node_address" >> $HOME/.bash_profile
-    source $HOME/.bash_profile   
+    echo "export Artela_RPC_PORT=$node_address" >>$HOME/.bash_profile
+    source $HOME/.bash_profile
 
     pm2 start artelad -- start && pm2 save && pm2 startup
-    
+
     # 下载快照
     artelad tendermint unsafe-reset-all --home $HOME/.artelad --keep-addr-book
     curl https://snapshots-testnet.nodejumper.io/artela-testnet/artela-testnet_latest.tar.lz4 | lz4 -dc - | tar -xf - -C $HOME/.artelad
@@ -138,7 +142,7 @@ function install_node() {
     pm2 restart artelad
 
     echo '====================== 安装完成,请退出脚本后执行 source $HOME/.bash_profile 以加载环境变量 ==========================='
-    
+
 }
 
 # 查看Artela 服务状态
@@ -157,21 +161,21 @@ function uninstall_node() {
     read -r -p "请确认: " response
 
     case "$response" in
-        [yY][eE][sS]|[yY]) 
-            echo "开始卸载节点程序..."
-            pm2 stop artelad && pm2 delete artelad
-            rm -rf $HOME/.artelad $HOME/artela $(which artelad)
-            echo "节点程序卸载完成。"
-            ;;
-        *)
-            echo "取消卸载操作。"
-            ;;
+    [yY][eE][sS] | [yY])
+        echo "开始卸载节点程序..."
+        pm2 stop artelad && pm2 delete artelad
+        rm -rf $HOME/.artelad $HOME/artela $(which artelad)
+        echo "节点程序卸载完成。"
+        ;;
+    *)
+        echo "取消卸载操作。"
+        ;;
     esac
 }
 
 # 创建钱包
 function add_wallet() {
-    artelad keys add wallet
+    echo -e "$WALLET_PASS\n$WALLET_PASS" | artelad keys add wallet
 }
 
 # 导入钱包
@@ -179,10 +183,11 @@ function import_wallet() {
     artelad keys add wallet --recover
 }
 
-# 查询余额
-function check_balances() {
-    read -p "请输入钱包地址: " wallet_address
-    artelad query bank balances "$wallet_address"
+function view_wallet() {
+    output=$(echo "$WALLET_PASS" | artelad keys show wallet)
+    echo $output
+    addr=$(echo $output | grep -oP '(?<=address: ).*')
+    artelad query bank balances $addr
 }
 
 # 查看节点同步状态
@@ -192,29 +197,30 @@ function check_sync_status() {
 
 # 创建验证者
 function add_validator() {
-    read -p "请输入您的钱包名称: " wallet_name
+    # read -p "请输入您的钱包名称: " wallet_name
+    wallet_name=wallet
     read -p "请输入您想设置的验证者的名字: " validator_name
-    
-artelad tx staking create-validator \
---amount="1art" \
---pubkey=$(artelad tendermint show-validator) \
---moniker="$validator_name" \
---commission-rate="0.10" \
---commission-max-rate="0.20" \
---commission-max-change-rate="0.01" \
---min-self-delegation="1" \
---gas="200000" \
---chain-id="artela_11822-1" \
---from="$wallet_name" \
+
+    artelad tx staking create-validator \
+        --amount="1art" \
+        --pubkey=$(artelad tendermint show-validator) \
+        --moniker="$validator_name" \
+        --commission-rate="0.10" \
+        --commission-max-rate="0.20" \
+        --commission-max-change-rate="0.01" \
+        --min-self-delegation="1" \
+        --gas="200000" \
+        --chain-id="artela_11822-1" \
+        --from="wallet"
 
 }
 
-
 # 给自己地址验证者质押
 function delegate_self_validator() {
-read -p "请输入质押代币数量: " math
-read -p "请输入钱包名称: " wallet_name
-artelad tx staking delegate $(artelad keys show $wallet_name --bech val -a)  ${math}art --from $wallet_name --chain-id=artela_11822-1 --gas=300000
+    read -p "请输入质押代币数量: " math
+    # read -p "请输入钱包名称: " wallet_name
+    wallet_name=wallet
+    artelad tx staking delegate $(artelad keys show $wallet_name --bech val -a) ${math}art --from $wallet_name --chain-id=artela_11822-1 --gas=300000
 
 }
 
@@ -222,9 +228,8 @@ artelad tx staking delegate $(artelad keys show $wallet_name --bech val -a)  ${m
 function export_priv_validator_key() {
     echo "====================请将下方所有内容备份到自己的记事本或者excel表格中记录==========================================="
     cat ~/.artelad/config/priv_validator_key.json
-    
-}
 
+}
 
 function update_script() {
     SCRIPT_URL="https://raw.githubusercontent.com/a3165458/Artela/main/Artela.sh"
@@ -247,23 +252,23 @@ function main_menu() {
         echo "1. 安装节点"
         echo "2. 创建钱包"
         echo "3. 导入钱包"
-        echo "4. 查看钱包地址余额"
+        echo "4. 查看钱包信息"
         echo "5. 查看节点同步状态"
         echo "6. 查看当前服务状态"
         echo "7. 运行日志查询"
         echo "8. 卸载节点"
-        echo "9. 设置快捷键"  
-        echo "10. 创建验证者"  
-        echo "11. 给自己质押" 
-        echo "12. 备份验证者私钥" 
-        echo "13. 更新本脚本" 
+        echo "9. 设置快捷键"
+        echo "10. 创建验证者"
+        echo "11. 给自己质押"
+        echo "12. 备份验证者私钥"
+        echo "13. 更新本脚本"
         read -p "请输入选项（1-13）: " OPTION
 
         case $OPTION in
         1) install_node ;;
         2) add_wallet ;;
         3) import_wallet ;;
-        4) check_balances ;;
+        4) view_wallet ;;
         5) check_sync_status ;;
         6) check_service_status ;;
         7) view_logs ;;
@@ -278,7 +283,7 @@ function main_menu() {
         echo "按任意键返回主菜单..."
         read -n 1
     done
-    
+
 }
 
 # 显示主菜单
