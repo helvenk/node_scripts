@@ -185,8 +185,8 @@ function import_wallet() {
 
 function view_wallet() {
     output=$(echo "$WALLET_PASS" | artelad keys show wallet)
-    echo $output
-    addr=$(echo $output | grep -oP '(?<=address: ).*')
+    addr=$(echo $output | awk '/address/ {print $3}')
+    echo "钱包地址：$addr"
     artelad query bank balances $addr
 }
 
