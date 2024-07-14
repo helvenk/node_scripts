@@ -188,8 +188,7 @@ function view_wallet() {
     addr=$(echo $output | awk '/address/ {print $3}')
     evm=$(artelad debug addr $addr | awk '/Address \(hex\)/ {print $3}')
     echo "地址：$addr"
-    echo "evm地址：$evm"
-    echo "余额："
+    echo "evm地址：0x$evm"
     artelad query bank balances $addr
 }
 
@@ -202,9 +201,14 @@ function check_sync_status() {
 function add_validator() {
     # read -p "请输入您的钱包名称: " wallet_name
     wallet_name=wallet
-    read -p "请输入您想设置的验证者的名字: " validator_name
+    host=$(hostname | awk -F'.' '{print $1}')
+    read -p "请输入您想设置的验证者的名字:(回车使用主机名$host) " validator_name
 
-    artelad tx staking create-validator \
+    if [ -z "$validator_name" ]; then
+        validator_name=$host
+    fi
+
+    echo $WALLET_PASS | artelad tx staking create-validator \
         --amount="1art" \
         --pubkey=$(artelad tendermint show-validator) \
         --moniker="$validator_name" \
@@ -214,8 +218,7 @@ function add_validator() {
         --min-self-delegation="1" \
         --gas="200000" \
         --chain-id="artela_11822-1" \
-        --from="wallet"
-
+        --from="wallet" -y
 }
 
 # 给自己地址验证者质押
