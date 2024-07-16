@@ -246,45 +246,89 @@ function create_station_script() {
   NAME="airchains_station"
   screen -X -S $NAME quit
 
+  #   command='
+  # service_name="stationd"
+  # gas_string="with gas used"
+  # restart_delay=180  # Restart delay in seconds (3 minutes)
+
+  # echo "Script started and it will rollback $service_name if needed..."
+  # while true; do
+  #   # Get the last 10 lines of service logs
+  #   logs=$(systemctl status "$service_name" --no-pager | tail -n 30)
+
+  #   # 检查日志是否每一行都不包含 "module=junction txHash=" 并且每一行都包含 "INF New Block Found module=blocksync"
+  #   if ! echo "$logs" | grep -q "module=junction txHash=" && echo "$logs" | grep -q "INF New Block Found module=blocksync"; then
+  #     # 如果满足条件，则输出消息和时间戳
+  #     echo "[$(date)] No txHash found and all lines contain INF New Block Found, restarting stationd service..."
+  #     # 重启服务
+  #     sudo systemctl restart wasmstationd.service
+  #     sudo systemctl restart stationd.service
+  #     # 输出重启服务的时间戳
+  #     echo "[$(date)] stationd service restarted."
+  #   fi
+
+  #   # Check for both error and gas used strings
+  #   if [[ "$logs" =~ $gas_string ]]; then
+  #     echo "Found error and gas used in logs, stopping $service_name..."
+  #     systemctl stop "$service_name"
+  #     cd ~/tracks
+
+  #     echo "Service $service_name stopped, starting rollback..."
+  #     go run cmd/main.go rollback
+  #     go run cmd/main.go rollback
+  #     go run cmd/main.go rollback
+  #     echo "Rollback completed, starting $service_name..."
+  #     systemctl start "$service_name"
+  #     echo "Service $service_name started"
+  #   fi
+
+  #   # Sleep for the restart delay
+  #   sleep "$restart_delay"
+  # done'
+
   command='
-service_name="stationd"
-gas_string="with gas used"
-restart_delay=180  # Restart delay in seconds (3 minutes)
+#!/bin/bash
 
-echo "Script started and it will rollback $service_name if needed..."
-while true; do
-  # Get the last 10 lines of service logs
-  logs=$(systemctl status "$service_name" --no-pager | tail -n 30)
+SERV_NAME="stationd.service"
+ERR1="rpc error: code = Unavailable desc = incorrect pod number"
+ERR2="rpc error: code = Unknown desc = failed to execute message"
+ERR3="Failed to Init VRF"
+ERR4="Failed to unmarshal transaction"
+ERR5="Failed to Transact Verify pod"
+ERR6="VRF record is nil"
+ERR7="Failed to Validate VRF"
+ALL_ERRS="$ERR1|$ERR2|$ERR3|$ERR4|$ERR5|$ERR6|$ERR7"
 
-  # 检查日志是否每一行都不包含 "module=junction txHash=" 并且每一行都包含 "INF New Block Found module=blocksync"
-  if ! echo "$logs" | grep -q "module=junction txHash=" && echo "$logs" | grep -q "INF New Block Found module=blocksync"; then
-    # 如果满足条件，则输出消息和时间戳
-    echo "[$(date)] No txHash found and all lines contain INF New Block Found, restarting stationd service..."
-    # 重启服务
-    sudo systemctl restart wasmstationd.service
-    sudo systemctl restart stationd.service
-    # 输出重启服务的时间戳
-    echo "[$(date)] stationd service restarted."
-  fi
-
-  # Check for both error and gas used strings
-  if [[ "$logs" =~ $gas_string ]]; then
-    echo "Found error and gas used in logs, stopping $service_name..."
-    systemctl stop "$service_name"
+function rollback_restart() {
+    echo "Stopping..."
+    systemctl stop $SERV_NAME
     cd ~/tracks
-   
-    echo "Service $service_name stopped, starting rollback..."
-    go run cmd/main.go rollback
-    go run cmd/main.go rollback
-    go run cmd/main.go rollback
-    echo "Rollback completed, starting $service_name..."
-    systemctl start "$service_name"
-    echo "Service $service_name started"
-  fi
+    roll_times=$(( RANDOM % 3 + 1 ))
+    echo "Rolling back $roll_times pods..."
+    for (( i=0; i<$roll_times; i++ )); do
+      go run ./cmd/main.go rollback
+    done
+    echo "Restarting..."
+    systemctl restart $SERV_NAME
+}
 
-  # Sleep for the restart delay
-  sleep "$restart_delay"
-done'
+while true; do
+    log_lines=$(journalctl -u ${SERV_NAME} -n 10)
+    last_log_ts=$(( $(journalctl --no-pager --output=json -n 1 -u $SERV_NAME | jq -r '.["__REALTIME_TIMESTAMP"]') / 1000000 ))
+    now_ts=$(date +"%s")
+    wait_time=$((now_ts - last_log_ts))
+    if echo "$log_lines" | grep -Eq "$ALL_ERRS"; then
+	echo "Error detected!"
+        rollback_restart
+    elif [ $wait_time -gt 600 ]; then
+	"Long wait!"
+        rollback_restart
+    else
+        echo "listening......"
+    fi
+    sleep 60
+done
+'
 
   screen -dmS "$NAME" bash -c "$command"
   echo "请使用 screen -r $NAME 查看日志"
